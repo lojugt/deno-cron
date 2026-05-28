@@ -128,34 +128,34 @@ async function pinMessage(botToken: string, chatID: string, messageID: number): 
   return false;
 }
 
-async function unpinMessage(botToken: string, chatID: string): Promise<boolean> {
-  const tryUnpin = async (id: string) => {
+async function deleteTelegramMessage(botToken: string, chatID: string, messageID: number): Promise<boolean> {
+  const tryDelete = async (id: string) => {
     try {
-      const resp = await fetch(`https://api.telegram.org/bot${botToken}/unpinChatMessage`, {
+      const resp = await fetch(`https://api.telegram.org/bot${botToken}/deleteMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: id }),
+        body: JSON.stringify({ chat_id: id, message_id: messageID }),
       });
       const data = await resp.json();
       if (!resp.ok) {
-        console.warn(`Unpin API returned warning/error for ${id}:`, data);
+        console.error(`Failed to delete message ${messageID} in ${id}:`, data);
         return false;
       }
-      console.log(`Successfully unpinned messages in ${id}`);
+      console.log(`Successfully deleted message ${messageID} in ${id}`);
       return true;
     } catch (err) {
-      console.error(`Error unpinning message in ${id}:`, err);
+      console.error(`Error deleting message in ${id}:`, err);
       return false;
     }
   };
 
-  const success = await tryUnpin(chatID);
+  const success = await tryDelete(chatID);
   if (success) return true;
 
   const fallbackID = getFallbackChatID(chatID);
   if (fallbackID) {
-    console.log(`Retrying unpinMessage with fallback chat ID: ${fallbackID}`);
-    return await tryUnpin(fallbackID);
+    console.log(`Retrying deleteTelegramMessage with fallback chat ID: ${fallbackID}`);
+    return await tryDelete(fallbackID);
   }
   return false;
 }
@@ -225,13 +225,14 @@ async function checkStreamAndNotify(botToken: string, chatID: string, force = fa
   } else {
     console.log("Destiny is offline.");
 
-    // Check if we have an active stream notification pinned and unpin it to clean up
+    // Check if we have an active stream notification pinned and delete it entirely to clean up
     const pinned = await getPinnedMessage(botToken, chatID);
     if (pinned && pinned.text && pinned.text.includes("[StreamID:")) {
-      console.log("Found previous live notification pinned. Stream is now offline, unpinning...");
-      await unpinMessage(botToken, chatID);
-      return "Offline (Unpinned previous live notification)";
+      console.log(`Found previous live notification pinned (ID: ${pinned.message_id}). Stream is now offline, deleting...`);
+      await deleteTelegramMessage(botToken, chatID, pinned.message_id);
+      return "Offline (Deleted previous live notification)";
     }
+
 
     return "Offline (No action needed)";
   }
