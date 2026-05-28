@@ -215,7 +215,10 @@ async function checkStreamAndNotify(botToken: string, chatID: string, force = fa
     if (messageId !== null) {
       console.log(`Pinning live notification message ID ${messageId}...`);
       const pinnedSuccess = await pinMessage(botToken, chatID, messageId);
-      if (!pinnedSuccess) {
+      if (pinnedSuccess) {
+        console.log(`Deleting pin service notification (ID: ${messageId + 1})...`);
+        await deleteTelegramMessage(botToken, chatID, messageId + 1);
+      } else {
         console.warn("Could not pin the message. Make sure the bot has 'Pin Messages' permission in the channel.");
       }
       return `Live (Notification sent & pinned: ID ${currentStreamId})`;
@@ -228,8 +231,9 @@ async function checkStreamAndNotify(botToken: string, chatID: string, force = fa
     // Check if we have an active stream notification pinned and delete it entirely to clean up
     const pinned = await getPinnedMessage(botToken, chatID);
     if (pinned && pinned.text && pinned.text.includes("[StreamID:")) {
-      console.log(`Found previous live notification pinned (ID: ${pinned.message_id}). Stream is now offline, deleting...`);
+      console.log(`Found previous live notification pinned (ID: ${pinned.message_id}). Stream is now offline, deleting alert message and pin notification...`);
       await deleteTelegramMessage(botToken, chatID, pinned.message_id);
+      await deleteTelegramMessage(botToken, chatID, pinned.message_id + 1);
       return "Offline (Deleted previous live notification)";
     }
 
