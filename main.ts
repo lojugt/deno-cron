@@ -69,6 +69,10 @@ async function sendTelegramMessage(botToken: string, chatID: string, text: strin
           chat_id: id,
           text,
           parse_mode: "HTML",
+          disable_web_page_preview: true,
+          link_preview_options: {
+            is_disabled: true,
+          },
         }),
       });
       const data = await resp.json();
@@ -201,12 +205,10 @@ async function checkStreamAndNotify(botToken: string, chatID: string, force = fa
     }
 
     // Build stream alert message
-    const categoryName = livestream.categories?.[0]?.name || "Just Chatting";
-    const messageText = `🔴 <b>Destiny is LIVE on Kick!</b>\n\n` +
-      `<b>Title:</b> ${livestream.session_title}\n` +
-      `<b>Category:</b> ${categoryName}\n` +
-      `<b>Viewers:</b> ${livestream.viewer_count}\n\n` +
-      `Watch here: https://kick.com/destiny\n\n` +
+    const messageText = `🔴 <b>Destiny is LIVE!</b>\n\n` +
+      `https://kick.com/destiny\n\n` +
+      `https://youtube.com/destiny\n\n` +
+      `https://destiny.gg\n\n` +
       `<tg-spoiler>[StreamID: ${currentStreamId}]</tg-spoiler>`;
 
     console.log("Sending live notification to Telegram...");
